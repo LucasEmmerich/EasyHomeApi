@@ -6,7 +6,7 @@ exports.up = function (knex) {
         table.string('Email').notNullable();
         table.string('Contato');
         table.string('Nome');
-        
+        table.timestamp("DataCriacao").defaultTo(knex.fn.now());
         table.enu('Tipo',['Física','Jurídica']).notNullable();
         table.string('Documento');
         

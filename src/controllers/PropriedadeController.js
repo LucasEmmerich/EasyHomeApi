@@ -13,7 +13,7 @@ module.exports = {
             return response.json({ status: 401, error: String(err) })
         }
 
-        let insertedId;
+        let insertedId = Number();
 
         await connection('propriedade').insert({
             Descricao,
@@ -22,25 +22,12 @@ module.exports = {
             Tipo,
             Informacoes,
             Usuario_ID: userInfo.Id
+        }).returning('Id').then(Id => insertedId = Id[0]);
+
+        return response.json({
+            StatusCode: 201,
+            Propriedade_ID: insertedId
         });
-
-        // connection.transaction(async (transaction) => {
-        //     await connection('propriedade').insert({
-        //         Descricao,
-        //         Endereco,
-        //         AreaJsonConfig: JSON.stringify(AreaJsonConfig),
-        //         Tipo,
-        //         Informacoes,
-        //         Usuario_ID: userInfo.Id
-        //     })
-        //     .returning('Id')
-        //     .then(Id => {
-        //         insertedId = Id[0];
-        //     });
-        //     transaction.commit();
-        // })
-
-        return response.json('201');
     },
 
     async listPropriedadeByUser(request, response) {
@@ -59,7 +46,29 @@ module.exports = {
     },
 
     async listAllPropriedades(request, response) {
-        const propriedades = await connection('propriedade').select('*');
+        const propriedades = await connection('propriedade')
+            .innerJoin('usuario', 'propriedade.Usuario_ID', 'usuario.Id')
+            .select(
+                'propriedade.*',
+                'usuario.Nome as NomeUsuario',
+                'usuario.Contato as ContatoUsuario',
+                'usuario.Email as EmailUsuario',
+                'usuario.Tipo as TipoUsuario'
+            );
+
+        let images = await connection('imagens_propriedade').select('*');
+
+        for (let item of propriedades) {
+            let imgs = [];
+            images.forEach(function (x) {
+                if (item.Id == x.Propriedade_ID) {
+                    imgs.push(x.ImageUrl);
+                    return true;
+                }
+            });
+            item.Images = imgs;
+        }
+        
         return response.json(propriedades);
     },
 
@@ -103,6 +112,20 @@ module.exports = {
         await connection('propriedade').where('Id', Number(id)).delete();
 
         return response.json('200');
+    },
+
+    async uploadPropriedadeImagens(request, response) {
+        const propId = request.body.Propriedade_ID;
+        const images = [];
+        for (const img of request.files) {
+            images.push({
+                ImageFileName: img.originalname,
+                ImageUrl: `/public/propriedades/${propId}/${img.originalname}`,
+                Propriedade_ID: propId
+            })
+        }
+
+        await connection('imagens_propriedade').insert(images);
     }
 
 };

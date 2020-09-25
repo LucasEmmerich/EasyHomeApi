@@ -1,12 +1,12 @@
 exports.up = function (knex) {
     return knex.schema.createTable('propriedade', function (table) {
         table.increments('Id').primary();
-
         table.string('Endereco').notNullable();
         table.string('Descricao').notNullable();
         table.string('AreaJsonConfig').notNullable();
         table.enu('Tipo',['Casa','Apartamento','Terreno','Comercial','República']).notNullable();
         table.string('Informacoes');
+        table.timestamp("DataCriacao").defaultTo(knex.fn.now());
 
         
         table.integer('Usuario_ID').notNullable();
