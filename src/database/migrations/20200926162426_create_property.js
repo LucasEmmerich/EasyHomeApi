@@ -5,6 +5,7 @@ exports.up = function (knex) {
         table.string('Description').notNullable();
         table.string('AreaJsonConfig').notNullable();
         table.enu('Type',['Casa','Apartamento','Terreno','Comercial','República']).notNullable();
+        table.enu('SaleType',['Venda','Aluguel']).notNullable();
         table.string('Informations');
         table.timestamp("created_at").defaultTo(new Date().toLocaleString('pt-BR'));
 

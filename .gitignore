@@ -2,7 +2,9 @@
 
 
 #ignore images
-/src/public/propriedades/*
+/src/public/chat/*
+/src/public/property/*
+/src/public/user/*
 
 #ignore db, every pull run migrations.
 /src/database/db.sqlite

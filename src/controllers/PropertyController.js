@@ -3,7 +3,7 @@ const tokenHelper = require('../helpers/tokenHelper');
 
 module.exports = {
     async createProperty(request, response) {
-        const { Address, AreaJsonConfig, Type, Informations, Description } = request.body;
+        const { Address, AreaJsonConfig, Type, Informations, Description } = request.body; // add saletype
         let userInfo;
 
         try {
@@ -14,14 +14,15 @@ module.exports = {
         }
 
         let insertedId = Number();
-        
+
         await connection('property').insert({
             Description,
             Address,
             AreaJsonConfig: JSON.stringify(AreaJsonConfig),
             Type,
             Informations,
-            User_ID: userInfo.Id
+            User_ID: userInfo.Id,
+            SaleType: 'Venda'
         }).returning('Id').then(Id => insertedId = Id[0]);
 
         return response.json({
@@ -46,6 +47,9 @@ module.exports = {
     },
 
     async listAllProperties(request, response) {
+        let filteredTypes = request.query.Types.split(',');
+        let filteredSaleTypes = request.query.SaleTypes.split(',');
+
         const properties = await connection('property')
             .innerJoin('user', 'property.User_ID', 'user.Id')
             .select(
@@ -55,7 +59,9 @@ module.exports = {
                 'user.Email as UserEmail',
                 'user.Type as UserType',
                 'user.Id as UserID'
-            );
+            )
+            .whereIn('property.Type', filteredTypes)
+            .whereIn('property.SaleType', filteredSaleTypes)
 
         let images = await connection('property_images').select('*');
 
@@ -69,7 +75,7 @@ module.exports = {
             });
             item.Images = imgs;
         }
-        
+
         return response.json(properties);
     },
 
@@ -110,7 +116,7 @@ module.exports = {
         }
 
         const property = await connection('property').where('Id', Number(id)).delete();
-        if(property.User_ID != userInfo.Id){
+        if (property.User_ID != userInfo.Id) {
             return response.json({ status: 401, message: 'Unauthorized' })
         }
 
@@ -119,7 +125,7 @@ module.exports = {
 
     async uploadPropertyImages(request, response) {
         const propId = request.body.Property_ID;
-        
+
         const images = [];
         for (const img of request.files) {
             images.push({
