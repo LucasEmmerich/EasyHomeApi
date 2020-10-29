@@ -1,62 +1,59 @@
 const connection = require('../database/connection');
-const tokenHandler = require('../helpers/tokenHelper')
 const cryptography = require('../helpers/cryptographyHelper');
 const tokenHelper = require('../helpers/tokenHelper');
 
 module.exports = {
     async createUser(request, response) {
-        const { Nome, Login, Senha, Email, Contato, Documento,Tipo } = request.body;
-
+        const { Name, Login, Password, Email, Contact, Document,Type } = request.body;
+        
+        let insertedId = Number();
         try {
-            await connection('usuario').insert({
+            await connection('user').insert({
                 Login,
-                Senha: cryptography.encryptPasswd(Senha),
+                Password: cryptography.encryptPassword(Password),
                 Email,
-                Contato,
-                Nome,
-                Documento,
-                Tipo
-            });
+                Contact,
+                Name,
+                Document,
+                Type
+            }).returning('Id').then(Id => insertedId = Id[0]);
         }
         catch (err) {
             //duplicate field
             console.log(String(err));
             if (String(err).includes('UNIQUE constraint failed:')) {
-                if (String(err).includes('usuario.Login')) {
-                    return response.json({ errors: ["Login já Existente!"] });
+                if (String(err).includes('user.Login')) {
+                    return response.json({ status: 204, errors: ["Login already exists!"] });
                 }
             }
         }
-        return response.json({ status: 201 });
-    },
-
-    async listUser(request, response) { //just for tests or a future admin panel
-
-        const usuarios = await connection('usuario').select('*');
-
-        return response.json(usuarios);
+        return response.json({ status: 201,User_ID:insertedId });
     },
 
     async login(request, response) {
-        const { Login, Senha } = request.body;
+        const { Login, Password } = request.body;
 
-        const usuarioLogado = await connection('usuario').where('Login', Login).select('*').first();
+        const loggedUser = await connection('user').where('Login', Login).select('*').first();
+        
+        if (loggedUser !== undefined && cryptography.verifyPassword(Password, loggedUser.Password)) {
 
-        if (usuarioLogado !== undefined && cryptography.verifyPasswd(Senha, usuarioLogado.Senha)) {
+            const createdToken = tokenHelper.generateToken(loggedUser.Id, loggedUser.Login, loggedUser.Name);
 
-            const createdToken = tokenHelper.generateToken(usuarioLogado.Id, usuarioLogado.Login, usuarioLogado.Nome);
-
-            usuarioLogado.Senha = "";
+            loggedUser.Password = "";
 
             return response.json({
                 auth: true,
                 token: createdToken,
-                userInformation: usuarioLogado
+                userInformation: loggedUser
             });
         }
         else {
-            return response.status(500).json({ message: 'Login inválido!' });
+            return response.status(500).json({ message: 'Login and Password do not match!' });
         }
+    },
+    async uploadUserImg(request,response){
+        const userId = request.body.User_ID;
+        const user = await connection('user').where('Id',userId).update({ProfileImageUrl:`/public/user/${userId}/${request.file.originalname}`});
+        connection('user').update(user);
     }
-
 };

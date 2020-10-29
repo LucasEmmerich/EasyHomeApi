@@ -9,7 +9,7 @@ module.exports = {
         });
     },
     generateToken: (id, login, nome) => {
-        return jwt.sign({ Id: id, Login: login, Nome: nome }, config.jwtSecret, {
+        return jwt.sign({ Id: id, Login: login, Name: nome }, config.jwtSecret, {
             expiresIn: 99999
         });
     }

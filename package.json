@@ -6,7 +6,7 @@
   "config": {
     "jwtSecret": "100fedegosinha",
     "emailSuporte": "laemmerich@hotmail.com",
-    "dsvUrl": "http://localhost:3333/"
+    "dsvUrl": "http://192.168.100.3:3333/"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
