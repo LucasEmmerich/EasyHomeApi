@@ -1,139 +1,107 @@
-const connection = require('../database/connection');
 const tokenHelper = require('../helpers/tokenHelper');
+const propertyService = require('../database/services/PropertyService');
 
 module.exports = {
     async createProperty(request, response) {
-        const { Address, AreaJsonConfig, Type, Informations, Description } = request.body; // add saletype
-        let userInfo;
-
         try {
-            userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
-        }
-        catch (err) {
-            return response.json({ status: 401, error: String(err) })
-        }
+            const { Address, AreaJsonConfig, Type, Informations, Description, SaleType, Id } = request.body;
 
-        let insertedId = Number();
+            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
 
-        await connection('property').insert({
-            Description,
-            Address,
-            AreaJsonConfig: JSON.stringify(AreaJsonConfig),
-            Type,
-            Informations,
-            User_ID: userInfo.Id,
-            SaleType: 'Venda'
-        }).returning('Id').then(Id => insertedId = Id[0]);
+            const insertedId = await propertyService.saveProperty(Id , Address, AreaJsonConfig, Type, Informations, Description, SaleType, userInfo.Id);
 
-        return response.json({
-            StatusCode: 201,
-            Property_ID: insertedId
-        });
-    },
-
-    async listPropertyByUser(request, response) {
-        let userInfo;
-
-        try {
-            userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
-        }
-        catch (err) {
-            return response.json({ status: 401, error: String(err) })
-        }
-
-        const properties = await connection('property').where('User_ID', userInfo.Id).select('*');
-
-        return response.json(properties);
-    },
-
-    async listAllProperties(request, response) {
-        let filteredTypes = request.query.Types.split(',');
-        let filteredSaleTypes = request.query.SaleTypes.split(',');
-
-        const properties = await connection('property')
-            .innerJoin('user', 'property.User_ID', 'user.Id')
-            .select(
-                'property.*',
-                'user.Name as UserName',
-                'user.Contact as UserContact',
-                'user.Email as UserEmail',
-                'user.Type as UserType',
-                'user.Id as UserID'
-            )
-            .whereIn('property.Type', filteredTypes)
-            .whereIn('property.SaleType', filteredSaleTypes)
-
-        let images = await connection('property_images').select('*');
-
-        for (let item of properties) {
-            let imgs = [];
-            images.forEach(function (x) {
-                if (item.Id == x.Propriedade_ID) {
-                    imgs.push(x.ImageUrl);
-                    return true;
-                }
+            return response.status(201).json({
+                Property_ID: insertedId
             });
-            item.Images = imgs;
         }
-
-        return response.json(properties);
+        catch (err) {
+            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
+            else return response.status(500).json({ message: 'Internal Error' })
+        }
     },
 
     async updateProperty(request, response) {
-        const { Address, AreaJsonConfig, Type, Informations, Description, Id } = request.body;
-        let userInfo;
-
         try {
-            userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const { Address, AreaJsonConfig, Type, Informations, Description, SaleType, Id } = request.body;
+
+            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+
+            const updatedId = await propertyService.saveProperty(Id, Address, AreaJsonConfig, Type, Informations, Description, SaleType, userInfo.Id);
+            
+            return response.status(200).json({
+                Property_ID: updatedId
+            });
         }
         catch (err) {
-            return response.json({ status: 401, error: String(err) })
+            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
+            else return response.status(500).json({ message: 'Internal Error' })
         }
+    },
 
-        await connection('property')
-            .where('Id', Id)
-            .update({
-                Description,
-                Address,
-                AreaJsonConfig: JSON.stringify(AreaJsonConfig),
-                Type,
-                Informations,
-                User_ID: userInfo.Id
-            });
+    async listPropertyByUser(request, response) {
+        try {
+            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const properties = await propertyService.listPropertyByUser(userInfo.Id);
 
-        return response.json('200');
+            return response.json(properties);
+        }
+        catch (err) {
+            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
+            else return response.status(500).json({ message: 'Internal Error' })
+        }
+    },
+
+    async listAllProperties(request, response) {
+        try {
+            const filteredTypes = request.query.Types.split(',');
+            const filteredSaleTypes = request.query.SaleTypes.split(',');
+            
+            const properties = await propertyService.listAllProperties(filteredTypes, filteredSaleTypes);
+
+            return response.json(properties);
+        }
+        catch (err) {
+            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
+            else return response.status(500).json({ message: 'Internal Error' })
+        }
     },
 
     async deleteProperty(request, response) {
-        const { id } = request.params;
-        let userInfo;
-
         try {
-            userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const { id } = request.params;
+
+            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+
+            await propertyService.deleteProperty(id, userInfo.Id);
+
+            return response.json({ status: 200 });
         }
         catch (err) {
-            return response.json({ status: 401, message: 'Unauthorized' })
+            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
+            else return response.status(500).json({ message: 'Internal Error' })
         }
-
-        const property = await connection('property').where('Id', Number(id)).delete();
-        if (property.User_ID != userInfo.Id) {
-            return response.json({ status: 401, message: 'Unauthorized' })
-        }
-
-        return response.json('200');
     },
 
     async uploadPropertyImages(request, response) {
-        const propId = request.body.Property_ID;
+        try {
+            const propId = request.body.Property_ID;
+            const images = [];
 
-        const images = [];
-        for (const img of request.files) {
-            images.push({
-                ImageUrl: `/public/properties/${propId}/${img.originalname}`,
-                Property_ID: propId
-            })
+            for (const img of request.files) {
+                images.push({
+                    ImageUrl: `/public/properties/${propId}/${img.originalname}`,
+                    Property_ID: propId,
+                    created_at: new Date().toLocaleString()
+                })
+            };
+
+            await propertyService.uploadPropertyImages(images);
+
+            return response.status(200);
         }
-        await connection('property_images').insert(images);
+        catch (err) {
+            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
+            else return response.status(500).json({ message: 'Internal Error' })
+        }
     }
-
 };

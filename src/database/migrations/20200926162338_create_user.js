@@ -5,7 +5,8 @@ exports.up = function (knex) {
         table.string('Password').notNullable();
         table.string('Email').notNullable();
         table.string('Contact');
-        table.string('Name').notNullable();
+        table.string('FirstName').notNullable();
+        table.string('LastName').notNullable();
         table.timestamp("created_at").defaultTo(new Date().toLocaleString('pt-BR'));
         table.enu('Type',['Física','Jurídica']).notNullable();
         table.string('Document');

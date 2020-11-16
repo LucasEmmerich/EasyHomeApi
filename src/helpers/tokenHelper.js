@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
+const UnauthorizedTokenError = require('../errors/UnauthorizedTokenError');
 const config = require('../../package.json').config;
 
 module.exports = {
     getUserInfoByToken: (token) => {
         return jwt.verify(token, config.jwtSecret, (err, user) => {
-            if (err) throw new Error("Token inválido!");
+            if (err) throw new UnauthorizedTokenError("Token inválido!");
             return user;
         });
     },
