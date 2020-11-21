@@ -5,8 +5,7 @@
   "main": "index.js",
   "config": {
     "jwtSecret": "100fedegosinha",
-    "emailSuporte": "laemmerich@hotmail.com",
-    "dsvUrl": "http://192.168.100.18:3333/"
+    "emailSuporte": "laemmerich@hotmail.com"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
