@@ -7,15 +7,14 @@ module.exports = {
 
             const insertedId = await userService.createUser(FirstName, LastName, Login, Password, Email, Contact, Document, Type);
 
-            return response.json({
-                status: 201,
+            return response.status(201).json({
                 User_ID: insertedId
             });
         }
         catch (err) {
             if (String(err).includes('UNIQUE constraint failed:')) {
                 if (String(err).includes('user.Login')) {
-                    return response.status(200).json({ status: 204, errors: ["Login already exists!"] });
+                    return response.status(204).json({ errors: ["Login already exists!"] });
                 }
             }
         }

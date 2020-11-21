@@ -15,8 +15,10 @@ module.exports = {
             });
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
-            else return response.status(500).json({ message: 'Internal Error' })
+            if (err.name == 'UnauthorizedTokenError') 
+                return response.status(401);
+            else 
+                return response.status(500);
         }
     },
 
@@ -46,8 +48,10 @@ module.exports = {
             return response.json(properties);
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
-            else return response.status(500).json({ message: 'Internal Error' })
+            if (err.name == 'UnauthorizedTokenError') 
+                return response.status(401);
+            else 
+                return response.status(500);
         }
     },
 
@@ -61,8 +65,10 @@ module.exports = {
             return response.json(properties);
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
-            else return response.status(500).json({ message: 'Internal Error' })
+            if (err.name == 'UnauthorizedTokenError') 
+                return response.status(401);
+            else 
+                return response.status(500);
         }
     },
 
