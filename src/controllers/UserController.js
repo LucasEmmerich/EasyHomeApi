@@ -9,8 +9,12 @@ module.exports = {
             const { FirstName, LastName, Email, Contact, Document, Type, Login, Password } = request.body;
             const user = new User(undefined, FirstName, LastName, Email, Contact, Document, Type, Login, Password);
 
+
             if (user.valid) {
-                const id = await userService.createUser(user);
+                const userEntity = user.getEntity();
+                userEntity.Password = cryptographyHandler.encryptPassword(userEntity.Password);
+
+                const id = await userService.createUser(userEntity);
                 return response.status(201).json({
                     User_ID: id
                 });

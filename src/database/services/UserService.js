@@ -3,8 +3,6 @@ const LoginAlreadyExistsError = require('../../errors/LoginAlreadyExistsError');
 
 module.exports = {
     async createUser(user) {
-        const entity = user.getEntity();
-        entity.Password = cryptographyHandler.encryptPassword(entity.Password);
 
         const insertedId = connection('user')
             .insert(entity)
