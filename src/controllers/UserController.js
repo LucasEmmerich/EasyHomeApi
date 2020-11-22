@@ -1,11 +1,13 @@
 const userService = require('../database/services/UserService');
+const cryptographyHandler = require('../handlers/cryptographyHandler');
+const tokenHelper = require('../handlers/tokenHandler');
 const User = require('../model/User');
 
 module.exports = {
     async createUser(request, response) {
         try {
             const { FirstName, LastName, Email, Contact, Document, Type, Login, Password } = request.body;
-            const user = new User( undefined , FirstName, LastName, Email, Contact, Document, Type, Login, Password);
+            const user = new User(undefined, FirstName, LastName, Email, Contact, Document, Type, Login, Password);
 
             if (user.valid) {
                 const id = await userService.createUser(user);
@@ -15,10 +17,10 @@ module.exports = {
             }
             else {
                 return response.status(400).json({
-                    message:"O objeto não passou pela validação."
+                    message: "O objeto não passou pela validação."
                 });
             }
-                
+
         }
         catch (err) {
             if (err.name === 'LoginAlreadyExistsError') {
@@ -26,7 +28,7 @@ module.exports = {
                     message: err.message
                 });
             }
-            else{
+            else {
                 return response.status(500).json({
                     message: err.message
                 });
@@ -37,8 +39,29 @@ module.exports = {
     async login(request, response) {
         try {
             const { Login, Password } = request.body;
-            const loggedUser = await userService.login(Login, Password);
-            return response.status(200).json(loggedUser);
+            const user = await userService.getUser(Login);
+            
+            if (user) {
+                if (cryptographyHandler.verifyPassword(Password, user.Password)) {
+                    const createdToken = tokenHelper.generateToken(user.Id, user.Login, user.FirstName, user.LastName);
+                    user.Password = '';
+                    return response.status(200).json({
+                        auth: true,
+                        token: createdToken,
+                        userInformation: user
+                    })
+                }
+                else {
+                    return response.status(401).json({
+                        motivo: 'Senha incorreta!'
+                    });
+                }
+            }
+            else {
+                return response.status(401).json({
+                    motivo: 'Login não existente!'
+                });
+            }
         }
         catch (err) {
             return response.status(500).json({
