@@ -1,13 +1,13 @@
 const chatService = require('../database/services/ChatService');
 const UnauthorizedTokenError = require('../errors/UnauthorizedTokenError');
-const tokenHelper = require('../helpers/tokenHelper');
+const tokenHandler = require('../handlers/tokenHandler');
 
 module.exports = {
     async addChat(request, response) {
         try {
             const { User_To_ID, Message } = request.body;
 
-            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
 
             const User_ID = userInfo.Id;
 
@@ -22,7 +22,7 @@ module.exports = {
     },
     async getChatsByUser(request, response) {
         try {
-            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
 
             const chats = await chatService.getChatsByUser(userInfo.Id)
 
@@ -37,7 +37,7 @@ module.exports = {
         try {
             const { chatId } = request.params;
 
-            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
 
             const messages = await chatService.getMessagesByChat(chatId);
 

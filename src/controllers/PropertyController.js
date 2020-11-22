@@ -1,4 +1,4 @@
-const tokenHelper = require('../helpers/tokenHelper');
+const tokenHandler = require('../handlers/tokenHandler');
 const propertyService = require('../database/services/PropertyService');
 
 module.exports = {
@@ -6,7 +6,7 @@ module.exports = {
         try {
             const { Address, AreaJsonConfig, Type, Informations, Description, SaleType, Id } = request.body;
 
-            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
 
             const insertedId = await propertyService.saveProperty(Id , Address, AreaJsonConfig, Type, Informations, Description, SaleType, userInfo.Id);
 
@@ -26,7 +26,7 @@ module.exports = {
         try {
             const { Address, AreaJsonConfig, Type, Informations, Description, SaleType, Id } = request.body;
 
-            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
 
             const updatedId = await propertyService.saveProperty(Id, Address, AreaJsonConfig, Type, Informations, Description, SaleType, userInfo.Id);
             
@@ -42,7 +42,7 @@ module.exports = {
 
     async listPropertyByUser(request, response) {
         try {
-            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
             const properties = await propertyService.listPropertyByUser(userInfo.Id);
 
             return response.json(properties);
@@ -76,7 +76,7 @@ module.exports = {
         try {
             const { id } = request.params;
 
-            const userInfo = tokenHelper.getUserInfoByToken(request.headers.authorization);
+            const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
 
             await propertyService.deleteProperty(id, userInfo.Id);
 

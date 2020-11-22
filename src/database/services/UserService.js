@@ -1,31 +1,28 @@
 const connection = require('../connection');
-const cryptography = require('../../helpers/cryptographyHelper');
-const tokenHelper = require('../../helpers/tokenHelper');
+const cryptographyHandler = require('../../handlers/cryptographyHandler');
+const tokenHelper = require('../../handlers/tokenHandler');
+const LoginAlreadyExistsError = require('../../errors/LoginAlreadyExistsError');
 
 module.exports = {
-    async createUser(FirstName, LastName, Login, Password, Email, Contact, Document, Type) {
-        try {
-            const insertedId = await connection('user').insert({
-                Login: Login,
-                Password: cryptography.encryptPassword(Password),
-                Email: Email,
-                Contact: Contact,
-                FirstName: FirstName,
-                LastName: LastName,
-                Document: Document,
-                Type: Type
-            }).returning('Id').then(Id => { return Id[0] });
-            return insertedId;
-        }
-        catch (err) {
-            throw err;
-        }
+    async createUser(user) {
+        const entity = user.getEntity();
+        entity.Password = cryptographyHandler.encryptPassword(entity.Password);
+
+        const insertedId =
+            connection('user')
+                .insert(entity)
+                .then(id=>id[0])
+                .catch(err => {
+                    if (String(err).includes('UNIQUE constraint failed:'))
+                        if (String(err).includes('user.Login')) throw new LoginAlreadyExistsError();
+                });
+        return insertedId;
     },
     async login(Login, Password) {
         const loggedUser = await connection('user').where('Login', Login).select('*').first();
         if (loggedUser !== undefined) {
-            if(cryptography.verifyPassword(Password, loggedUser.Password)){
-                const createdToken = tokenHelper.generateToken(loggedUser.Id, loggedUser.Login, loggedUser.FirstName,loggedUser.LastName);
+            if (cryptographyHandler.verifyPassword(Password, loggedUser.Password)) {
+                const createdToken = tokenHelper.generateToken(loggedUser.Id, loggedUser.Login, loggedUser.FirstName, loggedUser.LastName);
                 loggedUser.Password = '';
                 return {
                     auth: true,
@@ -34,22 +31,22 @@ module.exports = {
                 };
             }
             else {
-                return { 
+                return {
                     auth: false,
                     motivo: 'Senha incorreta!'
                 }
             }
         }
-        else { 
-            return { 
+        else {
+            return {
                 auth: false,
                 motivo: 'Login não existente!'
             }
         }
     },
-    async uploadUserImg(userId,fileName) {
+    async uploadUserImg(userId, fileName) {
         await connection('user').where('Id', userId).update({
-            ProfileImageUrl: `/public/user/${userId}/${fileName}` 
+            ProfileImageUrl: `/public/user/${userId}/${fileName}`
         });
     }
 };

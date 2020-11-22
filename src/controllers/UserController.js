@@ -1,21 +1,35 @@
 const userService = require('../database/services/UserService');
+const User = require('../model/User');
 
 module.exports = {
     async createUser(request, response) {
         try {
-            const { FirstName, LastName, Login, Password, Email, Contact, Document, Type } = request.body;
+            const { FirstName, LastName, Email, Contact, Document, Type, Login, Password } = request.body;
+            const user = new User( undefined , FirstName, LastName, Email, Contact, Document, Type, Login, Password);
 
-            const insertedId = await userService.createUser(FirstName, LastName, Login, Password, Email, Contact, Document, Type);
-
-            return response.status(201).json({
-                User_ID: insertedId
-            });
+            if (user.valid) {
+                const id = await userService.createUser(user);
+                return response.status(201).json({
+                    User_ID: id
+                });
+            }
+            else {
+                return response.status(400).json({
+                    message:"O objeto não passou pela validação."
+                });
+            }
+                
         }
         catch (err) {
-            if (String(err).includes('UNIQUE constraint failed:')) {
-                if (String(err).includes('user.Login')) {
-                    return response.status(204).json({ errors: ["Login already exists!"] });
-                }
+            if (err.name === 'LoginAlreadyExistsError') {
+                return response.status(400).json({
+                    message: err.message
+                });
+            }
+            else{
+                return response.status(500).json({
+                    message: err.message
+                });
             }
         }
     },
@@ -24,19 +38,25 @@ module.exports = {
         try {
             const { Login, Password } = request.body;
             const loggedUser = await userService.login(Login, Password);
-            
-            return response.json(loggedUser);
+            return response.status(200).json(loggedUser);
         }
         catch (err) {
-            throw err;
+            return response.status(500).json({
+                message: err.message
+            });
         }
     },
     async uploadUserImg(request, response) {
         try {
-            await userService.uploadUserImg(request.body.User_ID, request.file.originalname);
+            const User_ID = request.body.User_ID;
+            const fileName = request.file.originalname;
+            await userService.uploadUserImg(User_ID, fileName);
+            return response.status(200);
         }
         catch (err) {
-            throw err;
+            return response.status(500).json({
+                message: err.message
+            });
         }
     }
 };
