@@ -2,7 +2,7 @@ const tokenHandler = require('../handlers/tokenHandler');
 const propertyService = require('../database/services/PropertyService');
 
 module.exports = {
-    async createProperty(request, response) {
+    async createProperty(request, response, errorHandler) {
         try {
             const { Address, AreaJsonConfig, Type, Informations, Description, SaleType, Id } = request.body;
 
@@ -15,14 +15,11 @@ module.exports = {
             });
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') 
-                return response.status(401);
-            else 
-                return response.status(500);
+            errorHandler(err);
         }
     },
 
-    async updateProperty(request, response) {
+    async updateProperty(request, response, errorHandler) {
         try {
             const { Address, AreaJsonConfig, Type, Informations, Description, SaleType, Id } = request.body;
 
@@ -35,44 +32,37 @@ module.exports = {
             });
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
-            else return response.status(500).json({ message: 'Internal Error' })
+            errorHandler(err);
         }
     },
 
-    async listPropertyByUser(request, response) {
+    async listPropertyByUser(request, response, errorHandler) {
         try {
             const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
             const properties = await propertyService.listPropertyByUser(userInfo.Id);
 
-            return response.json(properties);
+            return response.status(200).json(properties);
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') 
-                return response.status(401);
-            else 
-                return response.status(500);
+            errorHandler(err);
         }
     },
 
-    async listAllProperties(request, response) {
+    async listAllProperties(request, response, errorHandler) {
         try {
             const filteredTypes = request.query.Types.split(',');
             const filteredSaleTypes = request.query.SaleTypes.split(',');
             
             const properties = await propertyService.listAllProperties(filteredTypes, filteredSaleTypes);
 
-            return response.json(properties);
+            return response.status(200).json(properties);
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') 
-                return response.status(401);
-            else 
-                return response.status(500);
+            errorHandler(err);
         }
     },
 
-    async deleteProperty(request, response) {
+    async deleteProperty(request, response, errorHandler) {
         try {
             const { id } = request.params;
 
@@ -80,15 +70,14 @@ module.exports = {
 
             await propertyService.deleteProperty(id, userInfo.Id);
 
-            return response.json({ status: 200 });
+            return response.status(200).send('OK');
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
-            else return response.status(500).json({ message: 'Internal Error' })
+            errorHandler(err);
         }
     },
 
-    async uploadPropertyImages(request, response) {
+    async uploadPropertyImages(request, response, errorHandler) {
         try {
             const propId = request.body.Property_ID;
             const images = [];
@@ -103,11 +92,10 @@ module.exports = {
 
             await propertyService.uploadPropertyImages(images);
 
-            return response.status(200);
+            return response.status(200).send('OK');
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') return response.status(401).json({ message: 'Unauthorized' });
-            else return response.status(500).json({ message: 'Internal Error' })
+            errorHandler(err);
         }
     }
 };

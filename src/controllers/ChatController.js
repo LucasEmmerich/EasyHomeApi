@@ -1,53 +1,51 @@
 const chatService = require('../database/services/ChatService');
-const UnauthorizedTokenError = require('../errors/UnauthorizedTokenError');
 const tokenHandler = require('../handlers/tokenHandler');
+const UnauthorizedTokenError = require('../errors/UnauthorizedTokenError');
+const Chat = require('../model/Chat');
 
 module.exports = {
-    async addChat(request, response) {
+    async addChat(request, response, errorHandler) {
         try {
-            const { User_To_ID, Message } = request.body;
+            const Message  = request.body.Message;
+            const User_From_ID = tokenHandler.getUserInfoByToken(request.headers.authorization).Id;
+            const User_To_ID = request.body.User_To_ID;
+            const chat = new Chat(User_From_ID,User_To_ID,Message);
 
-            const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
+            if(chat.valid) chat.id = await chatService.addChat(chat.getEntity());
 
-            const User_ID = userInfo.Id;
-
-            await chatService.addChat(User_To_ID, Message, User_ID);
-
-            return response.json({ status: 201 });
+            return response.status(201).send();
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') return response.json({ status: 401, message: 'Unauthorized' });
-            else return response.json({ status: 500, message: 'Internal Error' })
+            errorHandler(err);
         }
     },
-    async getChatsByUser(request, response) {
+    async getChatsByUser(request, response,errorHandler) {
         try {
             const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
 
-            const chats = await chatService.getChatsByUser(userInfo.Id)
+            const chats = await chatService.getChatsByUser(userInfo.Id);
 
-            return response.json(chats);
+            return response.status(200).json(chats);
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') return response.json({ status: 401, message: 'Unauthorized' });
-            else return response.json({ status: 500, message: 'Internal Error' })
+            errorHandler(err);
         }
     },
-    async getMessagesByChat(request, response) {
+    async getMessagesByChat(request, response, errorHandler) {
         try {
-            const { chatId } = request.params;
+            const chatId = request.params.chatId;
 
             const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
 
             const messages = await chatService.getMessagesByChat(chatId);
 
-            if (messages[0].User1_ID !== userInfo.Id && messages[0].User2_ID !== userInfo.Id) throw new UnauthorizedTokenError('Chats não pertencentes ao Usuário.');
+            if (messages[0].User1_ID !== userInfo.Id && messages[0].User2_ID !== userInfo.Id) 
+                throw new UnauthorizedTokenError('Chats não pertencentes ao Usuário.');
 
-            return response.json(messages);
+            return response.status(200).json(messages);
         }
         catch (err) {
-            if (err.name == 'UnauthorizedTokenError') return response.json({ status: 401, message: 'Unauthorized' });
-            else return response.json({ status: 500, message: 'Internal Error' })
+            errorHandler(err);
         }
     }
 };

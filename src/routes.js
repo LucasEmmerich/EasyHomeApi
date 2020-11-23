@@ -58,7 +58,7 @@ routes.delete('/property/:id', PropertyController.deleteProperty);
 //#region Chat
 routes.post('/chat',ChatController.addChat);
 routes.get('/chat',ChatController.getChatsByUser);
-routes.get('/chat/:chatId',ChatController.getMessagesByChat);
+routes.get('/chat/:chatId/messages',ChatController.getMessagesByChat);
 //#endregion
 
 //#region GlobalImageHandler

@@ -4,11 +4,10 @@ const tokenHelper = require('../handlers/tokenHandler');
 const User = require('../model/User');
 
 module.exports = {
-    async createUser(request, response) {
+    async createUser(request, response, errorHandler) {
         try {
             const { FirstName, LastName, Email, Contact, Document, Type, Login, Password } = request.body;
             const user = new User(undefined, FirstName, LastName, Email, Contact, Document, Type, Login, Password);
-
 
             if (user.valid) {
                 const userEntity = user.getEntity();
@@ -27,20 +26,11 @@ module.exports = {
 
         }
         catch (err) {
-            if (err.name === 'LoginAlreadyExistsError') {
-                return response.status(400).json({
-                    message: err.message
-                });
-            }
-            else {
-                return response.status(500).json({
-                    message: err.message
-                });
-            }
+            errorHandler(err);
         }
     },
 
-    async login(request, response) {
+    async login(request, response, errorHandler) {
         try {
             const { Login, Password } = request.body;
             const user = await userService.getUser(Login);
@@ -56,24 +46,22 @@ module.exports = {
                     })
                 }
                 else {
-                    return response.status(401).json({
+                    return response.status(400).json({
                         motivo: 'Senha incorreta!'
                     });
                 }
             }
             else {
-                return response.status(401).json({
+                return response.status(400).json({
                     motivo: 'Login não existente!'
                 });
             }
         }
         catch (err) {
-            return response.status(500).json({
-                message: err.message
-            });
+            errorHandler(err);
         }
     },
-    async uploadUserImg(request, response) {
+    async uploadUserImg(request, response, errorHandler) {
         try {
             const User_ID = request.body.User_ID;
             const fileName = request.file.originalname;
@@ -81,9 +69,7 @@ module.exports = {
             return response.status(200);
         }
         catch (err) {
-            return response.status(500).json({
-                message: err.message
-            });
+            errorHandler(err);
         }
     }
 };
