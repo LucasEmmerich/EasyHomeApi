@@ -2,7 +2,6 @@ const connection = require('../connection');
 
 module.exports = {
     async addChat(chat) {
-        console.log(chat)
         const existentChat = await connection('chat')
             .where('User1_ID', chat.User2_ID)
             .orWhere('User1_ID', chat.User1_ID)
@@ -16,7 +15,7 @@ module.exports = {
             chatID = await connection('chat').insert({
                 User1_ID: chat.User1_ID,
                 User2_ID: chat.User2_ID
-            }).then(Id => Id[0]);
+            },'Id');
         }
         else chatID = existentChat.Id;
 

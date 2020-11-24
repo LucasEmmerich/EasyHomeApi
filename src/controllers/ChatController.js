@@ -2,6 +2,7 @@ const chatService = require('../database/services/ChatService');
 const tokenHandler = require('../handlers/tokenHandler');
 const UnauthorizedTokenError = require('../errors/UnauthorizedTokenError');
 const Chat = require('../model/Chat');
+const InvalidModelError = require('../errors/InvalidModelError');
 
 module.exports = {
     async addChat(request, response, errorHandler) {
@@ -11,9 +12,10 @@ module.exports = {
             const User_To_ID = request.body.User_To_ID;
             const chat = new Chat(User_From_ID,User_To_ID,Message);
 
-            if(chat.valid) chat.id = await chatService.addChat(chat.getEntity());
+            if(chat.valid) chat.id = await chatService.addChat(chat.getEntity()); 
+            else throw new InvalidModelError(); 
 
-            return response.status(201).send();
+            return response.status(201).send('OK');
         }
         catch (err) {
             errorHandler(err);
@@ -22,9 +24,7 @@ module.exports = {
     async getChatsByUser(request, response,errorHandler) {
         try {
             const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
-
             const chats = await chatService.getChatsByUser(userInfo.Id);
-
             return response.status(200).json(chats);
         }
         catch (err) {
@@ -34,14 +34,12 @@ module.exports = {
     async getMessagesByChat(request, response, errorHandler) {
         try {
             const chatId = request.params.chatId;
-
             const userInfo = tokenHandler.getUserInfoByToken(request.headers.authorization);
-
             const messages = await chatService.getMessagesByChat(chatId);
 
             if (messages[0].User1_ID !== userInfo.Id && messages[0].User2_ID !== userInfo.Id) 
                 throw new UnauthorizedTokenError('Chats não pertencentes ao Usuário.');
-
+                
             return response.status(200).json(messages);
         }
         catch (err) {

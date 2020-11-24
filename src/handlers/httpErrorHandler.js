@@ -1,12 +1,14 @@
 const UnauthorizedTokenError = require('../errors/UnauthorizedTokenError');
 const LoginAlreadyExistsError = require('../errors/LoginAlreadyExistsError');
 const DocumentAlreadyExistsError = require('../errors/DocumentAlreadyExistsError');
+const InvalidModelError = require('../errors/InvalidModelError');
 
 const handleError = (err, res) => {
     switch (err.name) {
         case LoginAlreadyExistsError.name:
         case DocumentAlreadyExistsError.name:
         case UnauthorizedTokenError.name:
+        case InvalidModelError.name:
             res.status(err.statusCode).json({ statusCode: err.statusCode, message: err.message });
             break;
         default:

@@ -2,6 +2,7 @@ const userService = require('../database/services/UserService');
 const cryptographyHandler = require('../handlers/cryptographyHandler');
 const tokenHelper = require('../handlers/tokenHandler');
 const User = require('../model/User');
+const InvalidModelError = require('../errors/InvalidModelError');
 
 module.exports = {
     async createUser(request, response, errorHandler) {
@@ -18,11 +19,7 @@ module.exports = {
                     User_ID: id
                 });
             }
-            else {
-                return response.status(400).json({
-                    message: "O objeto não passou pela validação."
-                });
-            }
+            else throw new InvalidModelError();
 
         }
         catch (err) {
